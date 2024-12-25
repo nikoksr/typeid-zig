@@ -34,9 +34,12 @@ TypeIDs are canonically encoded as lowercase strings consisting of three parts:
 Here's an example of a TypeID of type `user`:
 
 ```
-  user_2x4y6z8a0b1c2d3e4f5g6h7j8k
-└──┘└───────────────┘
- type     uuidv7 suffix (base32)
+user_2x4y6z8a0b1c2d3e4f5g6h7j8k
+  │    │
+  │    └── 26-character base32-encoded UUIDv7
+  │
+  └── Type prefix (snake_case [a-z_])
+        Max length: 63 characters
 ```
 
 A [formal specification](https://github.com/jetify-com/typeid/tree/main/spec) defines the encoding in more detail.
