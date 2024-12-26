@@ -38,6 +38,8 @@ pub const Error = error{
     TimestampOverflow,
     /// Timestamp is from before Unix epoch
     TimestampUnderflow,
+    /// Provided buffer is too small for UUID string representation
+    BufferTooSmall,
 };
 
 /// UUIDv7 Generator state
@@ -129,8 +131,9 @@ pub fn initSecure() Generator {
 }
 
 /// Convert UUID to canonical string format with hyphens (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
-pub fn toString(uuid: Uuid, buf: []u8) []const u8 {
-    std.debug.assert(buf.len >= 36);
+pub fn toString(uuid: Uuid, buf: []u8) Error![]const u8 {
+    if (buf.len < 36) return error.BufferTooSmall;
+
     var bytes: [16]u8 = undefined;
     std.mem.writeInt(u128, &bytes, uuid, .big);
 
