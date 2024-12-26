@@ -42,6 +42,8 @@ pub const Error = error{
     InvalidPrefixStart,
     /// Prefix cannot end with underscore
     InvalidPrefixEnd,
+    /// Prefix cannot contain consecutive underscores
+    InvalidPrefixConsecutiveUnderscores,
     /// Prefix can only contain [a-z_] characters
     InvalidPrefixChars,
     /// Suffix must be exactly 26 characters
@@ -283,8 +285,19 @@ fn validatePrefix(prefix: []const u8) !void {
         return Error.InvalidPrefixEnd;
     }
 
-    // Validate characters
+    // Check for consecutive underscores
+    var last_was_underscore = false;
     for (prefix) |c| {
+        if (c == '_') {
+            if (last_was_underscore) {
+                return Error.InvalidPrefixConsecutiveUnderscores;
+            }
+            last_was_underscore = true;
+        } else {
+            last_was_underscore = false;
+        }
+
+        // Validate characters
         if (!std.ascii.isLower(c) and c != '_') {
             return Error.InvalidPrefixChars;
         }
