@@ -285,19 +285,8 @@ fn validatePrefix(prefix: []const u8) !void {
         return Error.InvalidPrefixEnd;
     }
 
-    // Check for consecutive underscores
-    var last_was_underscore = false;
+    // Validate characters
     for (prefix) |c| {
-        if (c == '_') {
-            if (last_was_underscore) {
-                return Error.InvalidPrefixConsecutiveUnderscores;
-            }
-            last_was_underscore = true;
-        } else {
-            last_was_underscore = false;
-        }
-
-        // Validate characters
         if (!std.ascii.isLower(c) and c != '_') {
             return Error.InvalidPrefixChars;
         }
