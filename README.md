@@ -7,6 +7,7 @@
 &nbsp;
 
 [![Zig](https://img.shields.io/badge/Zig-0.13.0-orange.svg)](https://ziglang.org/)
+![CI](https://github.com/nikoksr/typeid-zig/actions/workflows/ci.yml/badge.svg)
 
 </div>
 
