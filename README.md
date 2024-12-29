@@ -66,24 +66,21 @@ exe.root_module.addImport("typeid", typeid.module("typeid"));
 ## Usage
 
 ```zig
-const TypeID = @import("typeid").TypeID;
-const TypeIDBuilder = @import("typeid").TypeIDBuilder;
+const typeid = @import("typeid");
+const TypeID = typeid.TypeID;
+const StringBuf = typeid.StringBuf;
 
 // Create a new TypeID with prefix
 const tid = try TypeID.init("user");
 
-// Get string representation
-var buf: [90]u8 = undefined;
-const str = try tid.toString(&buf);
-// str = "user_01h455vb4pex5vsknk084sn02q"
+// Get string representation.
+// StringBuf is simply a convenience buffer that's big enough to hold a TypeID of any size.
+//     => pub const StringBuf = [90]u8;
+var str_buf: StringBuf = undefined;
+const str = tid.toString(&str_buf); // "user_01h455vb4pex5vsknk084sn02q"
 
 // Parse existing TypeID string
 const parsed = try TypeID.fromString("post_01h455vb4pex5vsknk084sn02q");
-
-// Builder pattern with configuration
-const configured = try TypeIDBuilder.init()
-    .setPrefix("user")
-    .build();
 ```
 
 ## Tests
