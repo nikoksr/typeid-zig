@@ -19,6 +19,8 @@ Implementation of Type-IDs in Zig. Implemented as described by the official spec
 
 - [Type-ID specification](https://github.com/jetify-com/typeid/tree/main/spec)
 
+This implementation is part of the [official list of community provided TypeID implementations](https://github.com/jetify-com/typeid?tab=readme-ov-file#community-provided-implementations).
+
 ## What are Type-IDs?
 
 As per the official specification:
