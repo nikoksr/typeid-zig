@@ -1,6 +1,8 @@
 .{
-    .name = "typeid",
-    .version = "0.2.0",
+    .name = .typeid,
+    .version = "0.2.1",
+    .fingerprint = 0xe70b032c62449aa,
+    .minimum_zig_version = "0.14.0",
     .paths = .{
         "src",
         "build.zig",

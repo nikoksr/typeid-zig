@@ -12,7 +12,7 @@
 const std = @import("std");
 const math = std.math;
 const time = std.time;
-const Random = std.rand.Random;
+const Random = std.Random;
 
 /// A UUIDv7 value represented as a 128-bit unsigned integer
 pub const Uuid = u128;
