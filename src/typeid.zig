@@ -266,7 +266,7 @@ pub const TypeID = struct {
 
         // Then parse the TypeID from the string
         // NOTE: Can't return the underlying error directly, so we need to re-parse. This was new to me coming from Go,
-        // so I'm unsure what the right way of hgandling this is. This works for now, but doesn't feel right.
+        // so I'm unsure what the right way of handling this is. This works for now, but doesn't feel right.
         return Self.fromString(string) catch |err| switch (err) {
             error.EmptySuffix,
             error.EmptyPrefixWithSeparator,

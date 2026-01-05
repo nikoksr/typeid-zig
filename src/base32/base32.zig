@@ -1,7 +1,7 @@
 //! This module provides an implementation of base32 encoding and decoding. The implementation's
 //! intended purpose is to be used in the generation of TypeIDs for: https://github.com/nikoksr/typeid-zig
 //!
-//! The alogrithms are based on the Go implementation of ULID found at: https://github.com/oklog/ulid
+//! The algorithms are based on the Go implementation of ULID found at: https://github.com/oklog/ulid
 //!
 //! The code in this repo largely has been ported from the typeid-go implementation by jetify. The original
 //! code can be found at: https://github.com/jetify-com/typeid-go/tree/main/base32
