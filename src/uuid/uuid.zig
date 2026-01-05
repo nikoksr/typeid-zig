@@ -281,4 +281,3 @@ test "collision safety - multi-threaded generation" {
         }
     }
 }
-
