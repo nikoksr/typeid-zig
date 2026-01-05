@@ -238,8 +238,6 @@ pub const TypeID = struct {
     /// Provides debug formatting for TypeID
     pub fn format(
         self: Self,
-        comptime _: []const u8,
-        _: std.fmt.FormatOptions,
         writer: anytype,
     ) !void {
         if (self.prefix_len > 0) {
@@ -433,7 +431,7 @@ test "String formatting" {
 
     var buf: [100]u8 = undefined;
     var fbs = std.io.fixedBufferStream(&buf);
-    try std.fmt.format(fbs.writer(), "TypeID: {s}", .{tid});
+    try std.fmt.format(fbs.writer(), "TypeID: {f}", .{tid});
 
     var expected_buf: StringBuf = undefined;
     const expected = tid.toString(&expected_buf);

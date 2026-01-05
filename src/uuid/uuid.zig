@@ -86,23 +86,23 @@ pub fn initSecure() Generator {
 }
 
 /// Convert UUID to canonical string format with hyphens (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
-pub fn format(uuid: Uuid, comptime _: []const u8, _: std.fmt.FormatOptions, writer: anytype) (@TypeOf(writer).Error)!void {
+pub fn format(uuid: Uuid, writer: anytype) (@TypeOf(writer).Error)!void {
     var bytes: [16]u8 = undefined;
     std.mem.writeInt(u128, &bytes, uuid, .big);
 
-    try std.fmt.format(writer, "{}-{}-{}-{}-{}", .{
-        std.fmt.fmtSliceHexLower(bytes[0..4]),
-        std.fmt.fmtSliceHexLower(bytes[4..6]),
-        std.fmt.fmtSliceHexLower(bytes[6..8]),
-        std.fmt.fmtSliceHexLower(bytes[8..10]),
-        std.fmt.fmtSliceHexLower(bytes[10..16]),
+    try std.fmt.format(writer, "{x}-{x}-{x}-{x}-{x}", .{
+        bytes[0..4].*,
+        bytes[4..6].*,
+        bytes[6..8].*,
+        bytes[8..10].*,
+        bytes[10..16].*,
     });
 }
 
 /// Convert UUID to string using a fixed buffer
 pub fn toString(uuid: Uuid, buf: *[36]u8) []const u8 {
     var fbs = std.io.fixedBufferStream(buf);
-    format(uuid, "", .{}, fbs.writer()) catch unreachable;
+    format(uuid, fbs.writer()) catch unreachable;
     return fbs.getWritten();
 }
 
@@ -224,7 +224,7 @@ test "collision safety - multiple generators produce different UUIDs" {
 test "collision safety - multi-threaded generation" {
     const ThreadContext = struct {
         gen: Generator,
-        ids: std.ArrayList(Uuid),
+        ids: std.array_list.AlignedManaged(Uuid, null),
 
         fn worker(ctx: *@This()) !void {
             for (0..1000) |_| {
@@ -242,7 +242,7 @@ test "collision safety - multi-threaded generation" {
     for (0..num_threads) |i| {
         contexts[i] = .{
             .gen = initSecure(),
-            .ids = std.ArrayList(Uuid).init(std.testing.allocator),
+            .ids = std.array_list.AlignedManaged(Uuid, null).init(std.testing.allocator),
         };
     }
     defer {
