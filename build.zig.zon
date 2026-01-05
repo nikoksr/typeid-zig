@@ -1,7 +1,7 @@
 .{
     .name = .typeid,
-    .version = "0.2.1",
-    .fingerprint = 0xe70b032c62449aa,
+    .version = "0.3.0",
+    .fingerprint = 0xe70b0325e810107,
     .minimum_zig_version = "0.15.2",
     .paths = .{
         "src",
