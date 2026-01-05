@@ -127,3 +127,158 @@ test "UUIDv7 format" {
 
     try std.testing.expectEqualStrings(uuid_str_want, uuid_str_got);
 }
+
+test "RFC 9562 - UUIDv7 bit layout compliance" {
+    var gen = initSecure();
+    const test_uuid = try gen.next();
+    var bytes: [16]u8 = undefined;
+    std.mem.writeInt(u128, &bytes, test_uuid, .big);
+
+    // Verify version field (bits 48-51, octet 6 high nibble) = 0b0111 (7)
+    const version = (bytes[6] & 0xF0) >> 4;
+    try std.testing.expectEqual(@as(u8, 0x7), version);
+
+    // Verify variant field (bits 64-65, octet 8 MSBs) = 0b10
+    const variant = (bytes[8] & 0xC0) >> 6;
+    try std.testing.expectEqual(@as(u8, 0b10), variant);
+
+    // Verify timestamp exists (bits 0-47, octets 0-5)
+    const timestamp = (@as(u64, bytes[0]) << 40) |
+        (@as(u64, bytes[1]) << 32) |
+        (@as(u64, bytes[2]) << 24) |
+        (@as(u64, bytes[3]) << 16) |
+        (@as(u64, bytes[4]) << 8) |
+        (@as(u64, bytes[5]));
+    try std.testing.expect(timestamp > 0);
+}
+
+test "RFC 9562 - monotonicity guarantee" {
+    var gen = initSecure();
+    var last = try gen.next();
+
+    // Verify monotonic ordering across 10,000 UUIDs
+    for (0..10_000) |_| {
+        const current = try gen.next();
+        try std.testing.expect(current > last);
+        last = current;
+    }
+}
+
+test "RFC 9562 - string format compliance" {
+    var gen = initSecure();
+    const test_uuid = try gen.next();
+    var buf: [36]u8 = undefined;
+    const uuid_str = toString(test_uuid, &buf);
+
+    // Verify length and dash positions per RFC format:
+    // xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    try std.testing.expectEqual(@as(usize, 36), uuid_str.len);
+    try std.testing.expectEqual(@as(u8, '-'), uuid_str[8]);
+    try std.testing.expectEqual(@as(u8, '-'), uuid_str[13]);
+    try std.testing.expectEqual(@as(u8, '-'), uuid_str[18]);
+    try std.testing.expectEqual(@as(u8, '-'), uuid_str[23]);
+
+    // Verify all non-dash characters are hexadecimal
+    for (uuid_str, 0..) |c, i| {
+        if (i == 8 or i == 13 or i == 18 or i == 23) continue;
+        const is_hex = (c >= '0' and c <= '9') or
+            (c >= 'a' and c <= 'f') or
+            (c >= 'A' and c <= 'F');
+        try std.testing.expect(is_hex);
+    }
+}
+
+test "collision safety - single generator" {
+    var gen = initSecure();
+    var seen = std.AutoHashMap(Uuid, void).init(std.testing.allocator);
+    defer seen.deinit();
+
+    const count = 100_000;
+    var last: Uuid = 0;
+
+    for (0..count) |_| {
+        const id = try gen.next();
+
+        // Check monotonicity (must always increase)
+        try std.testing.expect(id > last);
+        last = id;
+
+        // Check for duplicates
+        const result = try seen.getOrPut(id);
+        try std.testing.expect(!result.found_existing);
+    }
+}
+
+test "collision safety - multiple generators produce different UUIDs" {
+    var gen1 = initSecure();
+    var gen2 = initSecure();
+
+    const id1 = try gen1.next();
+    const id2 = try gen2.next();
+
+    // Different generators should produce different UUIDs
+    // (62 bits of randomness make collisions virtually impossible)
+    try std.testing.expect(id1 != id2);
+}
+
+test "collision safety - multi-threaded generation" {
+    const ThreadContext = struct {
+        gen: Generator,
+        ids: std.ArrayList(Uuid),
+
+        fn worker(ctx: *@This()) !void {
+            for (0..1000) |_| {
+                const id = try ctx.gen.next();
+                try ctx.ids.append(id);
+            }
+        }
+    };
+
+    const num_threads = 8;
+    var threads: [num_threads]std.Thread = undefined;
+    var contexts: [num_threads]ThreadContext = undefined;
+
+    // Initialize contexts
+    for (0..num_threads) |i| {
+        contexts[i] = .{
+            .gen = initSecure(),
+            .ids = std.ArrayList(Uuid).init(std.testing.allocator),
+        };
+    }
+    defer {
+        for (0..num_threads) |i| {
+            contexts[i].ids.deinit();
+        }
+    }
+
+    // Spawn threads
+    for (0..num_threads) |i| {
+        threads[i] = try std.Thread.spawn(.{}, ThreadContext.worker, .{&contexts[i]});
+    }
+
+    // Wait for completion
+    for (0..num_threads) |i| {
+        threads[i].join();
+    }
+
+    // Check each generator's UUIDs are monotonic
+    for (contexts) |ctx| {
+        var last: Uuid = 0;
+        for (ctx.ids.items) |id| {
+            try std.testing.expect(id > last);
+            last = id;
+        }
+    }
+
+    // Collect all UUIDs and check for duplicates
+    var all_ids = std.AutoHashMap(Uuid, void).init(std.testing.allocator);
+    defer all_ids.deinit();
+
+    for (contexts) |ctx| {
+        for (ctx.ids.items) |id| {
+            const result = try all_ids.getOrPut(id);
+            try std.testing.expect(!result.found_existing);
+        }
+    }
+}
+
