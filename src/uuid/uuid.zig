@@ -7,7 +7,7 @@
 //! - Next 2 bits: UUID variant (2)
 //! - Final 62 bits: Random data
 //!
-//! This implementation is inpsired by github.com/google/uuid, a uuid package for Go.
+//! This implementation is inspired by github.com/google/uuid, a uuid package for Go.
 
 const std = @import("std");
 const math = std.math;
@@ -23,15 +23,14 @@ pub const Error = error{
     BufferTooSmall,
 };
 
-/// Mutex for protecting shared state
-var time_mutex = std.Thread.Mutex{};
-/// Last timestamp+sequence we returned
-var last_time: i128 = 0;
-
 /// Generator for UUIDv7 values
 pub const Generator = struct {
     /// Random number generator
     random: Random,
+    /// Mutex for protecting per-generator state
+    mutex: std.Thread.Mutex = .{},
+    /// Last timestamp+sequence this generator returned
+    last_time: i128 = 0,
 
     /// Initialize a new generator with given random source
     pub fn init(random: Random) Generator {
@@ -39,9 +38,9 @@ pub const Generator = struct {
     }
 
     /// Get timestamp and sequence that's guaranteed to be monotonic
-    fn getMonotonicTime() struct { milli: i64, seq: i64 } {
-        time_mutex.lock();
-        defer time_mutex.unlock();
+    fn getMonotonicTime(self: *Generator) struct { milli: i64, seq: i64 } {
+        self.mutex.lock();
+        defer self.mutex.unlock();
 
         const nano = time.nanoTimestamp();
         const milli = @divFloor(nano, time.ns_per_ms);
@@ -51,12 +50,12 @@ pub const Generator = struct {
         const now = (milli << 12) + seq;
 
         // Ensure monotonicity
-        const timestamp = if (now <= last_time)
-            last_time + 1
+        const timestamp = if (now <= self.last_time)
+            self.last_time + 1
         else
             now;
 
-        last_time = timestamp;
+        self.last_time = timestamp;
 
         return .{ .milli = @intCast(timestamp >> 12), .seq = @intCast(timestamp & 0xfff) };
     }
@@ -64,7 +63,7 @@ pub const Generator = struct {
     /// Generate a new UUIDv7 value
     pub fn next(self: *Generator) Error!Uuid {
         // Get monotonic time components
-        const t = getMonotonicTime();
+        const t = self.getMonotonicTime();
 
         // Generate 62 bits of randomness for bottom bits
         const rand_b = self.random.int(u62);
